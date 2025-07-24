@@ -5,7 +5,7 @@
 
 Please check our [Website](https://hopeful-music-819679.framer.app) for more details on our vision.
 
-[![DIPPY](/banner.png)]([https://dippy.ai](https://hopeful-music-819679.framer.app))
+[![DIPPY](/banner.png)]([https://dippy.studio))
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
 
 ---
@@ -32,7 +32,7 @@ Dippy is one of the world's leading AI companion apps with **7M+ users**. The ap
 
 When Dippy moved beyond text inference, we discovered that Bittensor still doesn’t have production-ready subnets for media inference. The Dippy Studio subnet aims to address this gap in the market and power the fastest, media generation platform on Bittensor. It's scalable, multi-modal, and ready to serve millions of users on Day 1. Our custom, in-house Dippy Inference Engine means that our users can reliably expect the fastest and cheapest inference available on the market.
 
-## Roadmap
+## Roadmap 
 
 Given the complexity of starting an enterprise grade inference engine from scratch, we plan to divide the process into 3 distinct phases.
 
