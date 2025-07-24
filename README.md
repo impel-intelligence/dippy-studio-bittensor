@@ -5,7 +5,7 @@
 
 Please check our [Website](https://hopeful-music-819679.framer.app) for more details on our vision.*
 
-[![DIPPY](/assets/banner.png)](https://dippy.ai)
+[![DIPPY](/banner.png)]([https://dippy.ai](https://hopeful-music-819679.framer.app))
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
 
 ---
