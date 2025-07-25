@@ -19,7 +19,6 @@ Please check our [Website](https://dippy.studio) for more details on our vision.
 - [Running Miners and Validators](#running-miners-and-validators)
   - [Running a Miner](#running-a-miner)
   - [Running a Validator](#running-a-validator)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -52,10 +51,9 @@ Given the complexity of starting an enterprise grade inference engine from scrat
 
 ## Overview of Miner and Validator Functionality
 
-**Miners** would use existing frameworks, fine tuning techniques, or MergeKit, to train, fine tune, or merge models to create a unique roleplay LLM. These models would be submitted to a shared Hugging Face pool. 
+**Miners** train Flux based LoRAs and run inference on an optimized version of the image and other media models using Dippy's Inference Engine. 
 
-**Validators** would evaluate the and assess model performance via our protocol and rank the submissions based on an [open scoring format](/docs/llm_scoring.md). We will provide a suite of 
-testing and benchmarking protocols with state-of-the-art datasets.
+**Validators** evaluate and assess the output quality, consistency and latency of the LoRAs and media outputs.
 
 ## Running Miners and Validators
 
@@ -65,32 +63,9 @@ For detailed miner setup instructions, please see [Miner Documentation](docs/min
 ### Running a Validator
 For detailed validator setup instructions, please see [Validator Documentation](docs/validator.md).
 
-## Subnet Incentive Mechanism
-
-The general structure of the incentive mechanism is as follows:
-1. Every miner has a model registered per UID
-2. Each miner's model submission is scored, with details outlined below
-   - The scoring mechanism is constantly evolving according to SOTA model bechmark data
-
-3. The validator compares each miner's score against all the other miners, and calculates a win rate
-    - Note that there are some modifiers for a miner's score such as their submission age in relation to other miner submissions (aka time penalty) to combat blatant model copying
-4. Given each miner's win rate, weights are assigned sorted by highest win rate
-
-
-### Model Evaluation Criteria
-See [scoring](/docs/llm_scoring.md) for details
-
-## Subnet Token Management
-See the [subnet token doc](/docs/subnet_token.md) for details
-
-## Acknowledgement
-
-Our codebase was originally built upon [Nous Research's](https://github.com/NousResearch/finetuning-subnet) and [MyShell's](https://github.com/myshell-ai/MyShell-TTS-Subnet?tab=readme-ov-file) Subnets. At the time of this writing, we have deviated significantly from these subnet architectures, providing more efficiency and capability.
-
 ## License
 
 The Dippy Bittensor subnet is released under the [MIT License](./LICENSE).
-
 
 # Project Structure Overview
 
