@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sn11"
+version = "0.0.1"
+authors = [
+  { name="donald knoller", email="dknoller@fastmail.com" },
+]
+description = "Dippy Studio Subnet"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/impel-intelligence/dippy-studio-bittensor"
+"Bug Tracker" = "https://github.com/impel-intelligence/dippy-studio-bittensor/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]

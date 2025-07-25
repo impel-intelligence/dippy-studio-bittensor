@@ -3,7 +3,7 @@
 # Dippy SN11: Enterprise Grade Generative Media Platform on Bittensor  <!-- omit in toc -->
 
 
-Please check our [Website](https://hopeful-music-819679.framer.app) for more details on our vision.
+Please check our [Website](https://dippy.studio) for more details on our vision.
 
 [![DIPPY](/banner.png)]([https://dippy.studio))
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
@@ -58,45 +58,12 @@ Given the complexity of starting an enterprise grade inference engine from scrat
 testing and benchmarking protocols with state-of-the-art datasets.
 
 ## Running Miners and Validators
+
 ### Running a Miner
-> **Important:** Please carefully read through the [FAQ](docs/FAQ.md) and [Detailed Miner Documentation](docs/miner.md). These contain critical information about model requirements, evaluation criteria, and best practices that will help ensure your submissions are valid and competitive.
-
-
+For detailed miner setup instructions, please see [Miner Documentation](docs/miner.md).
 
 ### Running a Validator
-
-#### Requirements
-- Python 3.9+
-
-#### Setup
-To start, clone the repository and `cd` to it:
-```
-git clone https://github.com/impel-intelligence/dippy-bittensor-subnet.git
-cd dippy-bittensor-subnet
-pip install -e .
-```
-To run the evaluation, simply use the following command:
-
-``` 
-python neurons/validator.py --wallet.name WALLET_NAME --wallet.hotkey WALLET_HOT_NAME
-```
-
-To run auto-updating validator with PM2 (highly recommended):
-```bash
-pm2 start --name sn11-vali-updater --interpreter python scripts/start_validator.py -- --pm2_name sn11-vali --wallet.name WALLET_NAME --wallet.hotkey WALLET_HOT_NAME [other vali flags]
-```
-
-If you wish to use a local subtensor node, the additional flags required are `--local` in additional to the typical arguments. 
-Example:
-```bash
-python neurons/validator.py \
---wallet.name coldkey \
---wallet.hotkey hotkey \
---local \
---subtensor.network local --subtensor.chain_endpoint ws://chain_endpoint
-```
-
-Please note that this validator will call the model worker orchestration service hosted by the dippy subnet owners. Current support for local worker orchestration is disabled at this time.
+For detailed validator setup instructions, please see [Validator Documentation](docs/validator.md).
 
 ## Subnet Incentive Mechanism
 
@@ -129,31 +96,13 @@ The Dippy Bittensor subnet is released under the [MIT License](./LICENSE).
 
 ## Core Components
 
-### 1. Main Application
-- `neurons/` - Core neural network components
-  - `miner.py` - Miner code for submitting a model to the bittensor network
-  - `validator.py` - Validation node implementation
-  - `model_queue.py` - Queue management for model processing (for internal use)
+### 1. Miner Implementation
+- `dippy-studio-bittensor-miner/` - Main miner application
 
-### 2. LLM Scoring
-- `scoring/` - All code that determines the scoring for an LLM lives here
+### 2. Subnet Infrastructure
+- `subnet/` - Subnet-specific code and configuration
 
-### 3. Utilities
-- `utilities/` - Common utility functions
-  - `repo_details.py` - Repository management utilities
-  - `validation_utils.py` - Validation helper functions
-
-### 4. Documentation
+### 3. Documentation
 - `docs/` - Project documentation
   - `miner.md` - Miner setup and usage guide
   - `validator.md` - Validator setup and usage guide
-  - `FAQ.md` - Frequently asked questions
-  - `llm_scoring.md` - LLM Scoring criteria
-
-### 5. Worker API (for internal use)
-- `wokrer_api/` - API for model validation. Only validators and subnet operators require usage of this API. Miners do not need to set this up in 99% of cases
-
-## Docker Configuration
-- `evaluator.Dockerfile` - Docker configuration for evaluator (scoring worker)
-- `worker_api/vapi.Dockerfile` - Docker configuration for worker API
-
