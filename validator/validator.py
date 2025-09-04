@@ -52,7 +52,7 @@ alpha = 0.9
 temperature = 0.005 * 15
 
 ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor-subnet.com"  
-SUBNET_REGISTERED_UID = 74  
+SUBNET_OWNER_UID = 74  
 SUBNET_EMISSION_BURN_RATE = 0.99
 
 class StrEnum(str, Enum):
@@ -202,11 +202,11 @@ class Validator:
             self.uid = assert_registered(self.wallet, self.metagraph)
 
         # === Running args ===
-        torch_metagraph = torch.from_numpy(self.metagraph.S)
+        torch_metagraph = torch.from_numpy(self.metagraph.S).to(torch.float32)
 
-        self.weights = torch.zeros_like(torch_metagraph)
+        self.weights = torch.zeros_like(torch_metagraph, dtype=torch.float32)
 
-        torch_consensus = torch.from_numpy(self.metagraph.C)
+        torch_consensus = torch.from_numpy(self.metagraph.C).to(torch.float32)
         self.weights.copy_(torch_consensus)
 
         validator_uid = 0
@@ -432,10 +432,9 @@ class Validator:
                 "stats": {}
             }
         """
-        base_url = ORCHESTRATION_SERVER
 
         # Construct URL with query parameters
-        validation_endpoint = f"http://localhost:2222/scores"
+        validation_endpoint = f"{ORCHESTRATION_SERVER}/scores"
         
         # Prepare request data
         request_data = {
@@ -741,35 +740,60 @@ class Validator:
         # Compute weights based on win rate
         model_weights = torch.tensor([win_rate[uid] for uid in sorted_uids], dtype=torch.float32)
 
-        target_uid = SUBNET_REGISTERED_UID
+        target_uid = SUBNET_OWNER_UID
         target_weight_ratio = SUBNET_EMISSION_BURN_RATE
-        
-        try:
-            target_idx = sorted_uids.index(target_uid)
-            temp = temperature
-            
-            initial_weights = torch.softmax(model_weights / temp, dim=0)
-            
-            # Scale down non-target weights to make room for target weight
-            initial_weights = initial_weights * (1 - target_weight_ratio)
-            
-            initial_weights[target_idx] = target_weight_ratio
-            
-            step_weights = initial_weights
-            
-        except ValueError:
-            temp = temperature
-            step_weights = torch.softmax(model_weights / temp, dim=0)
 
-        step_weights = step_weights / step_weights.sum()
+        # Special case: all scores are zero -> allocate all weight to SUBNET_OWNER_UID if present
+        scores_all_zero = all(miner_registry[uid].total_score == 0 for uid in sorted_uids)
+        if scores_all_zero:
+            step_weights = torch.zeros(len(sorted_uids), dtype=torch.float32)
+            try:
+                target_idx = sorted_uids.index(target_uid)
+                step_weights[target_idx] = 1.0
+                bt.logging.warning(
+                    f"All scores zero; allocating all weight to owner uid {target_uid}"
+                )
+            except ValueError:
+                # Target uid not in current metagraph; fall back to uniform across available uids
+                if len(sorted_uids) > 0:
+                    step_weights.fill_(1.0 / len(sorted_uids))
+                    bt.logging.warning(
+                        f"All scores zero; owner uid {target_uid} missing; using uniform weights"
+                    )
+        else:
+            try:
+                target_idx = sorted_uids.index(target_uid)
+                temp = temperature
+                
+                initial_weights = torch.softmax(model_weights / temp, dim=0)
+                
+                # Scale down non-target weights to make room for target weight
+                initial_weights = initial_weights * (1 - target_weight_ratio)
+                
+                initial_weights[target_idx] = target_weight_ratio
+                
+                step_weights = initial_weights
+                
+            except ValueError:
+                temp = temperature
+                step_weights = torch.softmax(model_weights / temp, dim=0)
+
+        # Safely normalize step weights (no-op if empty)
+        if step_weights.numel() > 0:
+            denom = step_weights.sum()
+            if denom > 0:
+                step_weights = step_weights / denom
 
         # Update weights based on moving average.
-        torch_metagraph = torch.from_numpy(self.metagraph.S)
-        self.weights = torch.zeros_like(torch_metagraph)
-        new_weights = torch.zeros_like(torch_metagraph)
+        torch_metagraph = torch.from_numpy(self.metagraph.S).to(torch.float32)
+        self.weights = torch.zeros_like(torch_metagraph, dtype=torch.float32)
+        new_weights = torch.zeros_like(torch_metagraph, dtype=torch.float32)
         for i, uid_i in enumerate(sorted_uids):
             new_weights[uid_i] = step_weights[i]
-        new_weights *= 1 / new_weights.sum()
+        # Normalize new_weights safely (avoid in-place float->long cast and zero division)
+        total = new_weights.sum()
+        if total > 0:
+            new_weights = new_weights / total
         if new_weights.shape[0] < self.weights.shape[0]:
             self.weights = self.weights[: new_weights.shape[0]]
         elif new_weights.shape[0] > self.weights.shape[0]:

@@ -164,6 +164,9 @@ def main(args: List[str]) -> None:
     """Run validator once, sleep, and repeat forever with auto-update before each run."""
     current_version = get_version()
     log.info("Starting periodic validator. Current version: %s", current_version)
+    
+    log.info(f"Starting periodic validator. Current args: {args}")
+
 
     while True:
         try:
