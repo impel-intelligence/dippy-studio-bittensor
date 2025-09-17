@@ -51,9 +51,13 @@ weights_version_key = 7
 alpha = 0.9
 temperature = 0.005 * 15
 
-ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor-subnet.com"  
-SUBNET_OWNER_UID = 74  
-SUBNET_EMISSION_BURN_RATE = 0.99
+ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor-subnet.com"
+SUBNET_OWNER_UID = 74
+BASE_BURN_RATE = 0.99
+BURN_ADJUSTMENT_INTERVAL = 1000000
+MIN_BURN_RATE = 0.97
+MAX_BURN_RATE = 0.995
+BURN_DECAY_FACTOR = 0.001
 
 class StrEnum(str, Enum):
     def __str__(self):
@@ -223,7 +227,85 @@ class Validator:
         )
         bt.logging.warning(f"dumping localmetadata: {self.local_metadata}")
 
+    @staticmethod
+    def calculate_dynamic_burn_rate(current_block: int) -> float:
+        """
+        Calculate dynamic burn rate based on current block height.
 
+        The burn rate decreases over time to gradually reduce centralization.
+        Formula: base_rate - (block_intervals * decay_factor)
+
+        Args:
+            current_block: Current blockchain block height
+
+        Returns:
+            float: Calculated burn rate between MIN_BURN_RATE and MAX_BURN_RATE
+        """
+        try:
+            intervals_passed = current_block // BURN_ADJUSTMENT_INTERVAL
+            dynamic_rate = BASE_BURN_RATE - (intervals_passed * BURN_DECAY_FACTOR)
+            burn_rate = max(MIN_BURN_RATE, min(MAX_BURN_RATE, dynamic_rate))
+
+            bt.logging.debug(
+                f"Dynamic burn calculation: block={current_block}, intervals={intervals_passed}, "
+                f"calculated_rate={dynamic_rate:.6f}, final_rate={burn_rate:.6f}"
+            )
+
+            return burn_rate
+
+        except Exception as e:
+            bt.logging.error(f"Error calculating dynamic burn rate: {e}")
+            return BASE_BURN_RATE
+
+
+    def adjust_weights_for_burn(
+        self,
+        base_weights: torch.Tensor,
+        sorted_uids: List[int],
+        burn_rate: float,
+        target_uid: int = SUBNET_OWNER_UID
+    ) -> torch.Tensor:
+        """
+        Adjust weight allocations based on dynamic burn rate.
+
+        Args:
+            base_weights: Original calculated weights
+            sorted_uids: List of UIDs in same order as weights
+            burn_rate: Dynamic burn rate to apply
+            target_uid: UID to receive burned tokens
+
+        Returns:
+            torch.Tensor: Adjusted weights with burn allocation
+        """
+        try:
+            adjusted_weights = base_weights.clone()
+
+            target_idx = None
+            try:
+                target_idx = sorted_uids.index(target_uid)
+            except ValueError:
+                bt.logging.warning(f"Target UID {target_uid} not found in current metagraph")
+                return adjusted_weights
+
+            total_weight = adjusted_weights.sum()
+            burn_amount = total_weight * burn_rate
+            remaining_weight = total_weight - burn_amount
+
+            if total_weight > 0:
+                adjusted_weights = adjusted_weights * (remaining_weight / total_weight)
+
+            adjusted_weights[target_idx] += burn_amount
+
+            bt.logging.info(
+                f"Applied dynamic burn: rate={burn_rate:.6f}, burned={burn_amount:.6f}, "
+                f"allocated_to_uid={target_uid}"
+            )
+
+            return adjusted_weights
+
+        except Exception as e:
+            bt.logging.error(f"Error adjusting weights for burn: {e}")
+            return base_weights
 
 
     @staticmethod
@@ -413,14 +495,14 @@ class Validator:
     ) -> Dict[str, Any]:
         """
         Get scores for multiple miners.
-        
+
         Args:
             hotkeys: List of hotkeys to get scores for
             config: Validator config
             local_metadata: Local metadata for the validator
             signatures: Request signatures
             debug: Debug flag
-            
+
         Returns:
             Dict with structure:
             {
@@ -435,7 +517,7 @@ class Validator:
 
         # Construct URL with query parameters
         validation_endpoint = f"{ORCHESTRATION_SERVER}/scores"
-        
+
         # Prepare request data
         request_data = {
             "hotkeys": hotkeys
@@ -470,7 +552,7 @@ class Validator:
                 for hotkey in hotkeys:
                     if hotkey in result["scores"]:
                         score_info = result["scores"][hotkey]
-                        
+
                         # Map old status values to new ones
                         old_status = score_info.get("status", "FAILED")
                         if old_status in ["COMPLETED"]:
@@ -479,13 +561,13 @@ class Validator:
                             new_status = "INVALID"
                         else:
                             new_status = old_status  # Keep new status values as-is
-                        
+
                         # Calculate total score
                         total_score = 0.0
                         if "score" in score_info and old_status == "COMPLETED":
                             # Use total_score directly from the score info
                             total_score = score_info["score"].get("total_score", 0.0)
-                        
+
                         response_data["scores"][hotkey] = {
                             "status": new_status,
                             "total_score": total_score
@@ -496,7 +578,7 @@ class Validator:
                             "status": "INVALID",
                             "total_score": 0.0
                         }
-                
+
                 # Add stats if present
                 if "stats" in result:
                     response_data["stats"] = result["stats"]
@@ -536,13 +618,13 @@ class Validator:
             miner_registry[uid].hotkey = hotkey
 
         bt.logging.debug(f"Getting scores for {len(hotkeys)} hotkeys")
-        
+
         # Generate signature for the request
         request_signature = sign_request(
-            keypair=self.wallet.hotkey, 
+            keypair=self.wallet.hotkey,
             payload=self.local_metadata.hotkey
         )
-        
+
         # Get all scores in batch
         hotkey_scores = Validator.get_miner_scores(
             hotkeys=hotkeys,
@@ -550,15 +632,15 @@ class Validator:
             local_metadata=self.local_metadata,
             signatures=request_signature
         )
-        
+
         # Update miner registry with scores
         for uid in all_uids:
             hotkey = uid_to_hotkey[uid]
-            
+
             try:
                 if hotkey in hotkey_scores["scores"]:
                     score_data = hotkey_scores["scores"][hotkey]
-                    
+
                     if score_data["status"] == "VALID":
                         miner_registry[uid].total_score = score_data["total_score"]
                         bt.logging.warning(
@@ -572,7 +654,7 @@ class Validator:
                 else:
                     bt.logging.error(f"No score data found for uid={uid} hotkey={hotkey}")
                     invalid_uids.append(uid)
-                    
+
             except Exception as e:
                 bt.logging.error(f"Could not update for uid={uid}:{hotkey} {e}")
                 bt.logging.error(f"Traceback: {traceback.format_exc()}")
@@ -741,7 +823,9 @@ class Validator:
         model_weights = torch.tensor([win_rate[uid] for uid in sorted_uids], dtype=torch.float32)
 
         target_uid = SUBNET_OWNER_UID
-        target_weight_ratio = SUBNET_EMISSION_BURN_RATE
+
+        dynamic_burn_rate = self.calculate_dynamic_burn_rate(current_block)
+        bt.logging.info(f"Using dynamic burn rate: {dynamic_burn_rate:.6f} (block: {current_block})")
 
         # Special case: all scores are zero -> allocate all weight to SUBNET_OWNER_UID if present
         scores_all_zero = all(miner_registry[uid].total_score == 0 for uid in sorted_uids)
@@ -761,22 +845,16 @@ class Validator:
                         f"All scores zero; owner uid {target_uid} missing; using uniform weights"
                     )
         else:
-            try:
-                target_idx = sorted_uids.index(target_uid)
-                temp = temperature
-                
-                initial_weights = torch.softmax(model_weights / temp, dim=0)
-                
-                # Scale down non-target weights to make room for target weight
-                initial_weights = initial_weights * (1 - target_weight_ratio)
-                
-                initial_weights[target_idx] = target_weight_ratio
-                
-                step_weights = initial_weights
-                
-            except ValueError:
-                temp = temperature
-                step_weights = torch.softmax(model_weights / temp, dim=0)
+            temp = temperature
+            base_weights = torch.softmax(model_weights / temp, dim=0)
+
+            step_weights = self.adjust_weights_for_burn(
+                base_weights=base_weights,
+                sorted_uids=sorted_uids,
+                burn_rate=dynamic_burn_rate,
+                target_uid=target_uid
+            )
+
 
         # Safely normalize step weights (no-op if empty)
         if step_weights.numel() > 0:
@@ -811,8 +889,10 @@ class Validator:
             miner_registry,
             wins,
             win_rate,
+            current_block,
+            dynamic_burn_rate,
         )
-        
+
         return True
 
     def log_step(
@@ -820,6 +900,8 @@ class Validator:
         miner_registry: Dict[int, MinerEntry],
         wins,
         win_rate,
+        current_block: int,
+        burn_rate: float,
     ):
         sorted_uids = sorted(miner_registry.keys())
         # Build step log
@@ -827,6 +909,8 @@ class Validator:
             "timestamp": time.time(),
             "uids": sorted_uids,
             "uid_data": {},
+            "current_block": current_block,
+            "burn_rate": burn_rate,
         }
         for i, uid in enumerate(sorted_uids):
             step_log["uid_data"][str(uid)] = {
@@ -837,6 +921,16 @@ class Validator:
                 "win_total": wins[uid],
                 "weight": self.weights[uid].item(),
             }
+
+        burn_table = Table(title="Dynamic Burn Information")
+        burn_table.add_column("Metric", style="cyan")
+        burn_table.add_column("Value", style="magenta")
+        burn_table.add_row("Current Block", str(current_block))
+        burn_table.add_row("Dynamic Burn Rate", f"{burn_rate:.6f}")
+        burn_table.add_row("Target UID (Owner)", str(SUBNET_OWNER_UID))
+        console = Console()
+        console.print(burn_table)
+
         table = Table(title="Step")
         table.add_column("uid", justify="right", style="cyan", no_wrap=True)
         table.add_column("score", style="magenta")
@@ -876,6 +970,10 @@ class Validator:
             scores_per_uid[uid] = miner_registry[uid].total_score
         bt.logging.debug(f"log_scores: {scores_per_uid}")
 
+        bt.logging.info(
+            f"Dynamic burn summary - Block: {current_block}, Rate: {burn_rate:.6f}"
+        )
+
     async def run(self):
         while True:
             try:
@@ -901,7 +999,7 @@ class Validator:
                         except Exception as e:
                             bt.logging.error(f"Exception during try_run_step attempt {attempt + 1}: {e}")
                             run_step_success = False # Ensure success is false on exception
-                        
+
                         if not run_step_success and attempt < 2: # If failed and not the last attempt
                             wait_time = (2**attempt) * 5  # 5s, 10s, 20s backoff
                             bt.logging.warning(f"Retrying try_run_step in {wait_time}s...")
@@ -910,7 +1008,7 @@ class Validator:
                              bt.logging.error(f"Failed all 3 attempts to run step.")
 
                     run_step_payload = {
-                        "run_step_success": run_step_success, 
+                        "run_step_success": run_step_success,
                         "attempts_made": final_run_step_attempt + 1
                     }
                     self._remote_log(run_step_payload)
@@ -972,7 +1070,10 @@ class Validator:
             except Exception as e:
                 bt.logging.error(f"Error in validator loop \n {e} \n {traceback.format_exc()}")
                 # Construct the payload directly for _remote_log
-                error_payload = {"validator_loop_error": str(e), "stacktrace": traceback.format_exc()}
+                error_payload = {
+                    "validator_loop_error": str(e),
+                    "stacktrace": traceback.format_exc(),
+                }
                 self._remote_log(error_payload)
                 # Add a small delay before retrying in case of continuous errors
                 await asyncio.sleep(5)
