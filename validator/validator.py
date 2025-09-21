@@ -1038,8 +1038,15 @@ class Validator:
                     self._remote_log(final_status_payload)
 
                     if self.config.immediate:
-                        bt.logging.error("completed run. exiting now")
-                        return
+                        if weights_set_success and run_step_success:
+                            print("success run. exiting now")
+                            os._exit(0)
+                            return
+                        else:
+                            print("failed run. exiting now")
+                            os._exit(1)
+                            return
+                        
                     # Wait for ~1 minute to avoid running multiple times within the same minute
                     await asyncio.sleep(70)
 
