@@ -46,7 +46,7 @@ ROOT_DIR = Path(__file__).parent.parent
 
 # Miner/Validator model parameters
 
-weights_version_key = 7
+weights_version_key = 8
 
 alpha = 0.9
 temperature = 0.005 * 15
@@ -54,10 +54,6 @@ temperature = 0.005 * 15
 ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor-subnet.com"
 SUBNET_OWNER_UID = 74
 BASE_BURN_RATE = 0.75
-BURN_ADJUSTMENT_INTERVAL = 1000000
-MIN_BURN_RATE = 0.50
-MAX_BURN_RATE = 0.75
-BURN_DECAY_FACTOR = 0.001
 
 class StrEnum(str, Enum):
     def __str__(self):
@@ -230,32 +226,15 @@ class Validator:
     @staticmethod
     def calculate_dynamic_burn_rate(current_block: int) -> float:
         """
-        Calculate dynamic burn rate based on current block height.
-
-        The burn rate decreases over time to gradually reduce centralization.
-        Formula: base_rate - (block_intervals * decay_factor)
+        Calculate burn rate - always returns BASE_BURN_RATE (0.75).
 
         Args:
-            current_block: Current blockchain block height
+            current_block: Current blockchain block height (unused)
 
         Returns:
-            float: Calculated burn rate between MIN_BURN_RATE and MAX_BURN_RATE
+            float: Fixed burn rate of 0.75
         """
-        try:
-            intervals_passed = current_block // BURN_ADJUSTMENT_INTERVAL
-            dynamic_rate = BASE_BURN_RATE - (intervals_passed * BURN_DECAY_FACTOR)
-            burn_rate = max(MIN_BURN_RATE, min(MAX_BURN_RATE, dynamic_rate))
-
-            bt.logging.debug(
-                f"Dynamic burn calculation: block={current_block}, intervals={intervals_passed}, "
-                f"calculated_rate={dynamic_rate:.6f}, final_rate={burn_rate:.6f}"
-            )
-
-            return burn_rate
-
-        except Exception as e:
-            bt.logging.error(f"Error calculating dynamic burn rate: {e}")
-            return BASE_BURN_RATE
+        return BASE_BURN_RATE
 
 
     def adjust_weights_for_burn(
@@ -266,39 +245,44 @@ class Validator:
         target_uid: int = SUBNET_OWNER_UID
     ) -> torch.Tensor:
         """
-        Adjust weight allocations based on dynamic burn rate.
+        Adjust weight allocations with fixed burn rate.
+        75% of total weight goes to target_uid, 25% distributed among miners based on winrate.
 
         Args:
-            base_weights: Original calculated weights
+            base_weights: Original calculated weights (used for proportional distribution)
             sorted_uids: List of UIDs in same order as weights
-            burn_rate: Dynamic burn rate to apply
+            burn_rate: Burn rate (always 0.75)
             target_uid: UID to receive burned tokens
 
         Returns:
             torch.Tensor: Adjusted weights with burn allocation
         """
         try:
-            adjusted_weights = base_weights.clone()
+            adjusted_weights = torch.zeros_like(base_weights)
 
             target_idx = None
             try:
                 target_idx = sorted_uids.index(target_uid)
             except ValueError:
                 bt.logging.warning(f"Target UID {target_uid} not found in current metagraph")
-                return adjusted_weights
+                return base_weights
 
-            total_weight = adjusted_weights.sum()
-            burn_amount = total_weight * burn_rate
-            remaining_weight = total_weight - burn_amount
-
-            if total_weight > 0:
-                adjusted_weights = adjusted_weights * (remaining_weight / total_weight)
-
-            adjusted_weights[target_idx] += burn_amount
+            # Allocate 75% to target_uid
+            adjusted_weights[target_idx] = burn_rate
+            
+            # Allocate remaining 25% proportionally based on base_weights
+            remaining_weight = 1.0 - burn_rate
+            base_sum = base_weights.sum()
+            
+            if base_sum > 0:
+                # Distribute remaining weight proportionally, excluding target_uid
+                for i, uid in enumerate(sorted_uids):
+                    if uid != target_uid:
+                        adjusted_weights[i] = base_weights[i] * (remaining_weight / base_sum)
 
             bt.logging.info(
-                f"Applied dynamic burn: rate={burn_rate:.6f}, burned={burn_amount:.6f}, "
-                f"allocated_to_uid={target_uid}"
+                f"Applied fixed burn: rate={burn_rate:.6f}, allocated_to_uid={target_uid}, "
+                f"remaining_for_miners={remaining_weight:.6f}"
             )
 
             return adjusted_weights
@@ -824,8 +808,8 @@ class Validator:
 
         target_uid = SUBNET_OWNER_UID
 
-        dynamic_burn_rate = self.calculate_dynamic_burn_rate(current_block)
-        bt.logging.info(f"Using dynamic burn rate: {dynamic_burn_rate:.6f} (block: {current_block})")
+        burn_rate = self.calculate_dynamic_burn_rate(current_block)
+        bt.logging.info(f"Using fixed burn rate: {burn_rate:.6f}")
 
         # Special case: all scores are zero -> allocate all weight to SUBNET_OWNER_UID if present
         scores_all_zero = all(miner_registry[uid].total_score == 0 for uid in sorted_uids)
@@ -851,7 +835,7 @@ class Validator:
             step_weights = self.adjust_weights_for_burn(
                 base_weights=base_weights,
                 sorted_uids=sorted_uids,
-                burn_rate=dynamic_burn_rate,
+                burn_rate=burn_rate,
                 target_uid=target_uid
             )
 
@@ -890,7 +874,7 @@ class Validator:
             wins,
             win_rate,
             current_block,
-            dynamic_burn_rate,
+            burn_rate,
         )
 
         return True
@@ -922,11 +906,11 @@ class Validator:
                 "weight": self.weights[uid].item(),
             }
 
-        burn_table = Table(title="Dynamic Burn Information")
+        burn_table = Table(title="Fixed Burn Information")
         burn_table.add_column("Metric", style="cyan")
         burn_table.add_column("Value", style="magenta")
         burn_table.add_row("Current Block", str(current_block))
-        burn_table.add_row("Dynamic Burn Rate", f"{burn_rate:.6f}")
+        burn_table.add_row("Fixed Burn Rate", f"{burn_rate:.6f}")
         burn_table.add_row("Target UID (Owner)", str(SUBNET_OWNER_UID))
         console = Console()
         console.print(burn_table)
@@ -971,7 +955,7 @@ class Validator:
         bt.logging.debug(f"log_scores: {scores_per_uid}")
 
         bt.logging.info(
-            f"Dynamic burn summary - Block: {current_block}, Rate: {burn_rate:.6f}"
+            f"Fixed burn summary - Block: {current_block}, Rate: {burn_rate:.6f}"
         )
 
     async def run(self):
