@@ -57,6 +57,7 @@ class LiveMinerMetagraphClient(MinerMetagraphClient):
         )
         self._conn.commit()
         # This client no longer handles signing or outbound requests.
+        # NOTE: This value was from an older version of the code that was lost in the sauce. 
         self._max_alpha_limit = 1000
         self._last_update: Optional[datetime] = None
         self._last_block: Optional[int] = None
