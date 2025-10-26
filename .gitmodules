@@ -1,3 +1,6 @@
 [submodule "dippy-studio-bittensor-miner"]
 	path = dippy-studio-bittensor-miner
 	url = https://github.com/impel-intelligence/dippy-studio-bittensor-miner.git
+[submodule "orchestrator"]
+	path = orchestrator
+	url = https://github.com/impel-intelligence/dippy-studio-bittensor-orchestrator.git
