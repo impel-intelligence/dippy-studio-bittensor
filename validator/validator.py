@@ -44,6 +44,63 @@ SUBNET_UID = 11
 # The root directory of this project.
 ROOT_DIR = Path(__file__).parent.parent
 
+BANNED_HOTKEYS = [
+    "5EEoQnsLeFc9q1JRJioPLTBcrJ7hF6yLde2tRoCcRoPD58bC",
+    "5GpDK49Y2wRdJ6oM81F4imU2C2G3kCVqrvUed3Apfun2JBmJ",
+    "5FpnAeswfi5ezqeMAD9Shsc2RkjV2GLwkLwqgpg593wfkxuH",
+    "5ESDDUYYqmXYmJp9CT3Qm2oDZXgr4jyEQ1kQKbQHWnsCmvtm",
+    "5EUBrciKEHoy1njoB5NNFyi5nw6E7cAhUUHNyWeDHqoPfmd3",
+    "5Hguu9n7SZv5qxpJxDWnHRNng7kn5i2P1XpE7Z5zoCnZQDom",
+    "5G4asDrXb85GGTu8iYYdq973vXcutNBVMJ2wsPacKqT8VvvP",
+    "5EcbmG8JpsifjHVoGiCxMZ6DBAAqFX84HmDje2ns7pqr5vHY",
+    "5HMwXjuoP8Gaz7a65B8aRGTQDeog6KxhbXdo5aTUmDKCokLM",
+    "5G6bhzCZmVSq6UCSpuHYCNY6AY7AFqXwFsYXFicnGqX8zW27",
+    "5CLgw583gHMUQFudwAbUjikqsrgfurJoRMq8PebkyYJ7zFHX",
+    "5GWYGL6soTXViVy18pDbYoogSvSyFFw5DVHcWxjcyExRamNL",
+    "5FeqAjamJJ1VbcRTYGq23daBqD4qeBJeYeiRhpSY57zTh9ok",
+    "5HifMDiTC2Ghf4AZXm1C4GZqbwAMDLeVb8MP5DamtCYxvoN2",
+    "5CcQHetbCvvkB4ZgXBbDnSR2cErc7gFnsxUw6F8ew55AipyX",
+    "5E1gdzJ9z791jFSj4krrYPYR6VFdxYb1Ee4bvEXSg2ruuxHY",
+    "5G1N7boCPH7E5jGMoGLiVFayBDgmzMD4qkeNxHUT5SXE9zWb",
+    "5G6ZWY7YPp6z8vejpt46zMUoVKR64v4b7hGWLURSr2ffxgyw",
+    "5DXJNeLnLm6Y54ex5mYQfpGs6jaFcw8AhYjVe8DaTraum2NT",
+    "5F7TRP3K6pYoPhMsLinM3seRLFiN17dD29dQJzMkzAtjMh1p",
+    "5DkJhbTgDPqpwVm6cqcJthzPtXbDHb4hKFNqDApanxkefnrv",
+    "5Hbf8vMctQdLobtR6xQhRgftKpsTHri1DsB2RAPECHCsXDWm",
+    "5GHt5EESGijQn1PP5n6anq9tkfUtp5XrmjoQdXCLdzXgPQhn",
+    "5GQeNy5cAw5D4NCVMEQGCzDmGQSXUYs3ewT2tTnPxKnxJi7K",
+    "5HKcioqNtvxkthPYCkc8Ai4Jj5738jLom4ynWe1tczqwGory",
+    "5DyQQ854TRksvaLLg9Ttx5y3bnLvUcSS1iKc3TikZB3Bn5Am",
+    "5GRa22hbf55e3F2MGBVMdW9WyxV39ZjvkDek11g5pGztzENE",
+    "5D2m7MCjs9xwdtkdqsdAPnzi1BcN3jue6uhd1oYZddQJHesK",
+    "5Ff8i7hvnEH7uCwAB9iwH2LnzSANPoYwYkf5EBDHc3C55mtY",
+]
+
+BANNED_COLDKEYS = [
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5CDhMffUbdPXJC7KEBUNwhnRhmeD4zLeoHJaKsM4VETrjK1s",
+    "5CDhMffUbdPXJC7KEBUNwhnRhmeD4zLeoHJaKsM4VETrjK1s",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5Gq9jUWYYGXXXYy2MfxQUrrPYhvnz4RT9cSz39ofJY4MGxK7",
+    "5CDhMffUbdPXJC7KEBUNwhnRhmeD4zLeoHJaKsM4VETrjK1s",
+    "5Gq9jUWYYGXXXYy2MfxQUrrPYhvnz4RT9cSz39ofJY4MGxK7",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5CDhMffUbdPXJC7KEBUNwhnRhmeD4zLeoHJaKsM4VETrjK1s",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5Gq9jUWYYGXXXYy2MfxQUrrPYhvnz4RT9cSz39ofJY4MGxK7",
+    "5CDhMffUbdPXJC7KEBUNwhnRhmeD4zLeoHJaKsM4VETrjK1s",
+    "5CDhMffUbdPXJC7KEBUNwhnRhmeD4zLeoHJaKsM4VETrjK1s",
+    "5CDhMffUbdPXJC7KEBUNwhnRhmeD4zLeoHJaKsM4VETrjK1s",
+    "5Gq9jUWYYGXXXYy2MfxQUrrPYhvnz4RT9cSz39ofJY4MGxK7",
+    "5HYpLiuD2Hdrsh8jwQRa912NxqTPSDn5jprHEVYnizei3GvC",
+    "5Gq9jUWYYGXXXYy2MfxQUrrPYhvnz4RT9cSz39ofJY4MGxK7",
+    "5Gq9jUWYYGXXXYy2MfxQUrrPYhvnz4RT9cSz39ofJY4MGxK7",
+]
+
 # Miner/Validator model parameters
 
 weights_version_key = 8
@@ -54,6 +111,10 @@ temperature = 0.005 * 15
 ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor-subnet.com"
 SUBNET_OWNER_UID = 74
 BASE_BURN_RATE = 0.75
+
+def is_banned(key: str) -> bool:
+    """Returns True when the provided hotkey/coldkey is in the banned list."""
+    return key in BANNED_HOTKEYS or key in BANNED_COLDKEYS
 
 class StrEnum(str, Enum):
     def __str__(self):
@@ -95,6 +156,7 @@ class LocalMetadata:
 class MinerEntry(BaseModel):
     block: int = Field(default=sys.maxsize, description="The block number")
     hotkey: str = Field(default="", description="The hotkey of the miner")
+    coldkey: str = Field(default="", description="The coldkey of the miner")
     invalid: bool = Field(default=False, description="invalidity of determining score")
     total_score: float = Field(default=0)
 
@@ -315,6 +377,8 @@ class Validator:
             win_rate[uid_i] = wins[uid_i] / total_matches if total_matches > 0 else 0
 
             if miner_registry[uid_i].invalid or miner_registry[uid_i].total_score == 0:
+                win_rate[uid_i] = float("-inf")
+            if is_banned(miner_registry[uid_i].coldkey) or is_banned(miner_registry[uid_i].hotkey):
                 win_rate[uid_i] = float("-inf")
 
         return wins, win_rate
@@ -595,11 +659,21 @@ class Validator:
         # Collect all hotkeys
         hotkeys = []
         uid_to_hotkey = {}
+        try:
+            metagraph_coldkeys = self.metagraph.coldkeys
+        except Exception:
+            metagraph_coldkeys = None
         for uid in all_uids:
             hotkey = self.metagraph.hotkeys[uid]
             hotkeys.append(hotkey)
             uid_to_hotkey[uid] = hotkey
             miner_registry[uid].hotkey = hotkey
+            coldkey = ""
+            if metagraph_coldkeys and uid < len(metagraph_coldkeys):
+                coldkey = metagraph_coldkeys[uid]
+            elif hasattr(self.metagraph, "axons") and uid < len(self.metagraph.axons):
+                coldkey = getattr(self.metagraph.axons[uid], "coldkey", "")
+            miner_registry[uid].coldkey = coldkey
 
         bt.logging.debug(f"Getting scores for {len(hotkeys)} hotkeys")
 
@@ -900,6 +974,8 @@ class Validator:
             step_log["uid_data"][str(uid)] = {
                 "uid": uid,
                 "block": miner_registry[uid].block,
+                "hotkey": miner_registry[uid].hotkey,
+                "coldkey": miner_registry[uid].coldkey,
                 "score": miner_registry[uid].total_score,
                 "win_rate": win_rate[uid],
                 "win_total": wins[uid],
