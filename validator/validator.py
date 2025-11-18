@@ -801,7 +801,7 @@ class Validator:
             try:
                 sync_metagraph(attempt)
                 return True
-            # catch isues with crafting new subtensor
+            # catch issues with crafting new subtensor
             except Exception as e:
                 bt.logging.error(f"could not sync metagraph {e}")
                 if attempt == 2:
@@ -834,7 +834,7 @@ class Validator:
         Executes a step in the evaluation process of models. This function performs several key tasks:
         1. Iterate through blockchain state to find miner entries for models.
         2. Fetches model scoring data from separate evaluation instance.
-        3. Applies elimination logic to better calulate model scoring.
+        3. Applies elimination logic to better calculate model scoring.
         4. Calculates wins and win rates for each model to determine their performance relative to others.
         5. Updates the weights of each model based on their performance and applies a softmax normalization.
         6. Logs all relevant data for the step, including model IDs, scores, and win rates.
