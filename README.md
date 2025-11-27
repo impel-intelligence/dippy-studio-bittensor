@@ -36,8 +36,8 @@ When Dippy moved beyond text inference, we discovered that Bittensor still doesn
 Given the complexity of starting an enterprise grade inference engine from scratch, we plan to divide the process into 3 distinct phases.
 
 **Phase 1:** 
-- [ ] Subnet launch with Flux LoRA training and inference from Day 1
-- [ ] Dippy Studio powers all Dippy in-chat images using character-specific LoRAs serving millions of users
+- [ ] Subnet launch with deterministic inference from Day 1
+- [ ] Dippy Studio powers all Dippy in-chat images using Dippy Inference Engine serving millions of users
 - [ ] Beta version of self-serve API access for external builders to start building
 
 **Phase 2:** 
@@ -51,9 +51,10 @@ Given the complexity of starting an enterprise grade inference engine from scrat
 
 ## Overview of Miner and Validator Functionality
 
-**Miners** train Flux based LoRAs and run inference on an optimized version of the image and other media models using Dippy's Inference Engine. 
+**Miners** Run inference on an optimized version of the image and other media models using Dippy's Inference Engine. 
 
-**Validators** evaluate and assess the output quality, consistency and latency of the LoRAs and media outputs.
+**Validators** evaluate and assess the output quality, consistency and latency of miner outputs.
+Since outputs are deterministic, 
 
 ## Running Miners and Validators
 
@@ -74,8 +75,8 @@ The Dippy Bittensor subnet is released under the [MIT License](./LICENSE).
 ### 1. Miner Implementation
 - `dippy-studio-bittensor-miner/` - Main miner application
 
-### 2. Subnet Infrastructure
-- `subnet/` - Subnet-specific code and configuration
+### 2. Ochestrator Implemetnation
+- `dippy-studio-bittensor-orchestrator/` - Orchestrator system
 
 ### 3. Documentation
 - `docs/` - Project documentation

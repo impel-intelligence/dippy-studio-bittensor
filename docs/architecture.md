@@ -5,18 +5,16 @@
 
 ### 1.1 Background
 
-Dippy Studio's ultimate goal is to provide a decentralized platform that offers the best application level image generation tools, askin to fal.ai 
+Dippy Studio's ultimate goal is to provide a decentralized platform that offers the best application level image generation tools, akin to fal.ai 
 
 ### 1.2 Current Objectives
 
-- Fast LoRA training
 - Fast LoRA inference
 
 ### 1.3 Scope
 
 We focus on the following cases initially:
-- LoRA training from single images
-- Inference on provided LoRA models
+- Inference on optimized image models, with deterministic outputs
 
 
 ## 2. Service Overview
@@ -49,7 +47,7 @@ graph LR
     Registry -- "Provides Scores" --> Validator
 ```
 
-Essentially, miners fulfill tasks for orchestrators, whether that be inference, LoRA training, or anything else. 
+Essentially, miners fulfill tasks for orchestrators. Since output is deterministic, validating is as simple as re-running the initial request on the same profile. 
 Partially completed tasks will not count, a task is either valid or not according to the validation mechanism.
 Orchestrators manage the incoming tasks and convert to scores which can then be converted to weights by validators.
 
