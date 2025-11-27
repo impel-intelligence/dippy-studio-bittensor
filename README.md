@@ -51,6 +51,9 @@ Given the complexity of starting an enterprise grade inference engine from scrat
 
 ## Overview of Miner and Validator Functionality
 
+Note that this repository mainly serves for validator code. 
+There are two critical sub components - orchestrator and miner - which are linked here but have their own respective repositories. 
+
 **Miners** Run inference on an optimized version of the image and other media models using Dippy's Inference Engine. 
 
 **Validators** evaluate and assess the output quality, consistency and latency of miner outputs.
