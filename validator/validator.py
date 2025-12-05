@@ -108,7 +108,7 @@ weights_version_key = 8
 alpha = 0.9
 temperature = 0.005 * 15
 
-ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor-subnet.com"
+ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor.studio"
 SUBNET_OWNER_UID = 74
 BASE_BURN_RATE = 0.75
 
