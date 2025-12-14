@@ -1,3 +1,14 @@
+"""
+Validator with In-Memory Wallet Support
+
+This is a modified version of validator.py that supports loading wallet keys
+from seed files instead of the default filesystem-based wallet storage.
+
+Usage:
+    python validator_inmem.py --offline --no-verify \
+        --load-coldkey /path/to/coldkey_seed.txt \
+        --load-hotkey /path/to/hotkey_seed.txt
+"""
 
 import base64
 import datetime as dt
@@ -29,10 +40,137 @@ import numpy as np
 
 from bittensor.core.subtensor import Subtensor
 from bittensor.core.metagraph import Metagraph
-
+from bittensor_wallet import Keypair
 
 from pathlib import Path
 
+
+# =============================================================================
+# InMemoryWallet - Load wallet from seeds without filesystem storage
+# =============================================================================
+
+class InMemoryWallet:
+    """
+    A lightweight wallet wrapper that holds keypairs entirely in memory.
+
+    This class provides the same interface that bittensor's sign_and_send_extrinsic()
+    expects from a Wallet object, but without any filesystem operations.
+
+    Required properties for bittensor compatibility:
+    - coldkey: Keypair with signing capability
+    - hotkey: Keypair with signing capability
+    - coldkeypub: Keypair with at least ss58_address
+    """
+
+    def __init__(
+        self,
+        coldkey: Keypair,
+        hotkey: Keypair,
+        name: str = "inmemory",
+        hotkey_str: str = "default",
+    ):
+        self._coldkey = coldkey
+        self._hotkey = hotkey
+        self._name = name
+        self._hotkey_str = hotkey_str
+        # Create public-only keypairs for coldkeypub/hotkeypub
+        self._coldkeypub = Keypair(ss58_address=coldkey.ss58_address)
+        self._hotkeypub = Keypair(ss58_address=hotkey.ss58_address)
+
+    @property
+    def coldkey(self) -> Keypair:
+        return self._coldkey
+
+    @property
+    def hotkey(self) -> Keypair:
+        return self._hotkey
+
+    @property
+    def coldkeypub(self) -> Keypair:
+        return self._coldkeypub
+
+    @property
+    def hotkeypub(self) -> Keypair:
+        return self._hotkeypub
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def hotkey_str(self) -> str:
+        return self._hotkey_str
+
+    def unlock_coldkey(self) -> Keypair:
+        return self._coldkey
+
+    def unlock_hotkey(self) -> Keypair:
+        return self._hotkey
+
+    def unlock_coldkeypub(self) -> Keypair:
+        return self._coldkeypub
+
+    def unlock_hotkeypub(self) -> Keypair:
+        return self._hotkeypub
+
+    def __str__(self) -> str:
+        return f"InMemoryWallet(name={self._name}, coldkey={self._coldkey.ss58_address[:8]}..., hotkey={self._hotkey.ss58_address[:8]}...)"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+def load_seed_from_file(filepath: str) -> str:
+    """
+    Load a 32-byte hex seed from a text file.
+
+    Supports seeds in format: 0x323ab1393a820ebba4905f9c8cbc068acf7d38dc007245abbc0092b524e9ac17
+    """
+    path = Path(filepath)
+    if not path.exists():
+        raise FileNotFoundError(f"Seed file not found: {filepath}")
+
+    seed = path.read_text().strip()
+
+    # Validate the seed format
+    clean_seed = seed.lower()
+    if clean_seed.startswith("0x"):
+        clean_seed = clean_seed[2:]
+
+    if len(clean_seed) != 64:
+        raise ValueError(f"Invalid seed length in {filepath}. Expected 64 hex chars (32 bytes), got {len(clean_seed)}")
+
+    try:
+        bytes.fromhex(clean_seed)
+    except ValueError:
+        raise ValueError(f"Invalid hex seed in {filepath}")
+
+    return seed
+
+
+def create_wallet_from_seed_files(coldkey_path: str, hotkey_path: str) -> InMemoryWallet:
+    """Create an InMemoryWallet from seed files."""
+    bt.logging.info(f"Loading coldkey seed from: {coldkey_path}")
+    coldkey_seed = load_seed_from_file(coldkey_path)
+
+    bt.logging.info(f"Loading hotkey seed from: {hotkey_path}")
+    hotkey_seed = load_seed_from_file(hotkey_path)
+
+    coldkey = Keypair.create_from_seed(coldkey_seed)
+    hotkey = Keypair.create_from_seed(hotkey_seed)
+
+    wallet = InMemoryWallet(coldkey=coldkey, hotkey=hotkey, name="inmemory")
+
+    bt.logging.success(f"Created in-memory wallet:")
+    bt.logging.success(f"  Coldkey: {wallet.coldkey.ss58_address}")
+    bt.logging.success(f"  Hotkey:  {wallet.hotkey.ss58_address}")
+
+    return wallet
+
+
+# =============================================================================
+# Original validator.py code below (with modifications for in-memory wallet)
+# =============================================================================
 
 # Project constants
 
@@ -161,7 +299,7 @@ class MinerEntry(BaseModel):
     total_score: float = Field(default=0)
 
 
-def assert_registered(wallet: bt.wallet, metagraph: bt.metagraph) -> int:
+def assert_registered(wallet, metagraph: Metagraph) -> int:
     """Asserts the wallet is a registered miner and returns the miner's UID."""
     if wallet.hotkey.ss58_address not in metagraph.hotkeys:
         raise ValueError(
@@ -227,10 +365,24 @@ class Validator:
         )
         parser.add_argument("--netuid", type=int, default=SUBNET_UID, help="The subnet UID.")
 
-        bt.subtensor.add_args(parser)
+        # In-memory wallet arguments
+        parser.add_argument(
+            "--load-coldkey",
+            type=str,
+            default=None,
+            help="Path to file containing 32-byte hex seed for coldkey (e.g., 0x323ab1393a820ebba...)",
+        )
+        parser.add_argument(
+            "--load-hotkey",
+            type=str,
+            default=None,
+            help="Path to file containing 32-byte hex seed for hotkey (e.g., 0x323ab1393a820ebba...)",
+        )
+
+        # Note: bt.Subtensor doesn't have add_args in current bittensor version
         bt.logging.add_args(parser)
-        bt.wallet.add_args(parser)
-        config = bt.config(parser)
+        bt.Wallet.add_args(parser)
+        config = bt.Config(parser)
         return config
 
     def __init__(self, local_metadata: LocalMetadata):
@@ -244,7 +396,20 @@ class Validator:
         # Set verify flag based on --no-verify argument
         self.verify = not self.config.no_verify
 
-        self.wallet = bt.wallet(config=self.config)
+        # Check if we should load wallet from seed files (in-memory wallet)
+        load_coldkey = getattr(self.config, 'load_coldkey', None)
+        load_hotkey = getattr(self.config, 'load_hotkey', None)
+
+        if load_coldkey and load_hotkey:
+            bt.logging.info("=" * 60)
+            bt.logging.info("Loading wallet from seed files (in-memory mode)")
+            bt.logging.info("=" * 60)
+            self.wallet = create_wallet_from_seed_files(load_coldkey, load_hotkey)
+            bt.logging.success(f"Using in-memory wallet: {self.wallet}")
+        elif load_coldkey or load_hotkey:
+            raise ValueError("Both --load-coldkey and --load-hotkey must be provided together")
+        else:
+            self.wallet = bt.Wallet(config=self.config)
 
         try:
             self.subtensor = Validator.new_subtensor(self.config)
@@ -331,11 +496,11 @@ class Validator:
 
             # Allocate 75% to target_uid
             adjusted_weights[target_idx] = burn_rate
-            
+
             # Allocate remaining 25% proportionally based on base_weights
             remaining_weight = 1.0 - burn_rate
             base_sum = base_weights.sum()
-            
+
             if base_sum > 0:
                 # Distribute remaining weight proportionally, excluding target_uid
                 for i, uid in enumerate(sorted_uids):
@@ -364,9 +529,16 @@ class Validator:
         win_rate = {uid: 0 for uid in uids}
         for i, uid_i in enumerate(uids):
             total_matches = 0
+            has_duplicate_coldkey = False
+            coldkey_i = miner_registry[uid_i].coldkey
+
             for j, uid_j in enumerate(uids):
                 if i == j:
                     continue
+
+                # Check for duplicate coldkey
+                if coldkey_i and coldkey_i == miner_registry[uid_j].coldkey:
+                    has_duplicate_coldkey = True
 
                 score_i = miner_registry[uid_i].total_score
                 score_j = miner_registry[uid_j].total_score
@@ -379,6 +551,8 @@ class Validator:
             if miner_registry[uid_i].invalid or miner_registry[uid_i].total_score == 0:
                 win_rate[uid_i] = float("-inf")
             if is_banned(miner_registry[uid_i].coldkey) or is_banned(miner_registry[uid_i].hotkey):
+                win_rate[uid_i] = float("-inf")
+            if has_duplicate_coldkey:
                 win_rate[uid_i] = float("-inf")
 
         return wins, win_rate
@@ -1106,7 +1280,7 @@ class Validator:
                             print("failed run. exiting now")
                             os._exit(1)
                             return
-                        
+
                     # Wait for ~1 minute to avoid running multiple times within the same minute
                     await asyncio.sleep(70)
 
