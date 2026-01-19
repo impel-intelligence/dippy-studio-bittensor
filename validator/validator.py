@@ -248,7 +248,7 @@ temperature = 0.005 * 15
 
 ORCHESTRATION_SERVER = "https://orchestrator.dippy-bittensor.studio"
 SUBNET_OWNER_UID = 74
-BASE_BURN_RATE = 0.75
+BASE_BURN_RATE = 1
 
 def is_banned(key: str) -> bool:
     """Returns True when the provided hotkey/coldkey is in the banned list."""
@@ -1056,7 +1056,8 @@ class Validator:
 
         target_uid = SUBNET_OWNER_UID
 
-        burn_rate = self.calculate_dynamic_burn_rate(current_block)
+        # burn_rate = self.calculate_dynamic_burn_rate(current_block)
+        burn_rate = 1.0
         bt.logging.info(f"Using fixed burn rate: {burn_rate:.6f}")
 
         # Special case: all scores are zero -> allocate all weight to SUBNET_OWNER_UID if present
